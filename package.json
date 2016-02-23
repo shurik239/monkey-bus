@@ -1,7 +1,7 @@
 {
   "name": "monkey-bus",
-  "version": "0.1",
-  "description": "A micro-servicebus framework for RabbitMQ",
+  "version": "0.0.1",
+  "description": "A micro-service bus framework for RabbitMQ",
   "main": "src/index.js",
   "scripts": {
     "test": "grunt specs"
@@ -17,7 +17,6 @@
     "bus",
     "servicebus",
     "amqplib",
-    "wascally",
     "send",
     "receive",
     "pub",
@@ -37,9 +36,10 @@
     "url": "https://github.com/shurik239/monkey-bus/issues"
   },
   "homepage": "https://github.com/shurik239/monkey-bus",
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "dependencies": {
+    "rabbus": "^0.7.1",
+    "wascally": "^0.2.10"
   },
   "engines": {
     "node": ">=4.0",
