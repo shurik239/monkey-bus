@@ -2,7 +2,7 @@
   "name": "monkey-bus",
   "version": "0.0.1",
   "description": "A micro-service bus framework for RabbitMQ",
-  "main": "src/index.js",
+  "main": "src/bus.js",
   "scripts": {
     "test": "grunt specs"
   },
@@ -36,10 +36,19 @@
     "url": "https://github.com/shurik239/monkey-bus/issues"
   },
   "homepage": "https://github.com/shurik239/monkey-bus",
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5",
+    "sinon": "^1.17.3"
+  },
   "dependencies": {
+    "bluebird": "^3.3.1",
+    "node-uuid": "^1.4.7",
+    "object-hash": "^1.1.2",
+    "postal": "^1.0.8",
     "rabbus": "^0.7.1",
-    "wascally": "^0.2.10"
+    "wascally": "^0.2.10",
+    "whistlepunk": "^0.3.3"
   },
   "engines": {
     "node": ">=4.0",
