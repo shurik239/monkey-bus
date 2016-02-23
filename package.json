@@ -1,0 +1,48 @@
+{
+  "name": "monkey-bus",
+  "version": "0.1",
+  "description": "A micro-servicebus framework for RabbitMQ",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "grunt specs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shurik239/monkey-bus.git"
+  },
+  "keywords": [
+    "rabbitmq",
+    "messaging",
+    "message",
+    "bus",
+    "servicebus",
+    "amqplib",
+    "wascally",
+    "send",
+    "receive",
+    "pub",
+    "sub",
+    "pubsub",
+    "request",
+    "response",
+    "command",
+    "process",
+    "event",
+    "microservice",
+    "framework"
+  ],
+  "author": "Alexander Chirkov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/shurik239/monkey-bus/issues"
+  },
+  "homepage": "https://github.com/shurik239/monkey-bus",
+  "devDependencies": {
+  },
+  "dependencies": {
+  },
+  "engines": {
+    "node": ">=4.0",
+    "npm": ">=2.0"
+  }
+}
