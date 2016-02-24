@@ -4,5 +4,6 @@
     "vhost": "/",
     "user": "guest",
     "pass": "guest"
-  }
+  },
+  "consumerId": "test"
 }

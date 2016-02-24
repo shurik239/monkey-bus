@@ -6,6 +6,7 @@ var hash = require('object-hash');
 var registered = {};
 
 var rabbitPromise;
+var consumerId;
 
 function EventClass(eventName) {
 
@@ -26,7 +27,7 @@ function EventClass(eventName) {
         return producerPromise;
     };
 
-    var getConsumerPromise = function(consumerId){
+    var getConsumerPromise = function(){
         if (!consumerPromise) {
             consumerPromise = rabbitPromise.then(function(rabbit) {
                 var fullPath = ['event', eventName].join('.');
@@ -50,7 +51,7 @@ function EventClass(eventName) {
     };
 
     this.subscribe = function(callback) {
-        return getConsumerPromise(hash(callback)).then(function(consumer){
+        return getConsumerPromise().then(function(consumer){
             consumer.subscribe(function(message, properties, actions, next){
                 actions.ack();
                 callback(message);
@@ -66,6 +67,10 @@ module.exports = {
         if (!rabbitPromise) {
             rabbitPromise = rabbit;
         }
+    },
+
+    setConsumerId: function(cId){
+        consumerId = cId;
     },
 
     factory: function(eventName) {

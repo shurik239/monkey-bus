@@ -5,6 +5,8 @@ var Promise = require("bluebird");
 var logger = require("./logging")();
 var _event = require('./event');
 
+var uuid = require("node-uuid");
+
 function exit(){
     logger.warn("");
     logger.warn("shutting down ...");
@@ -30,6 +32,8 @@ process.on("unhandledRejection", errorHandler);
 var rabbitPromise;
 
 module.exports = function(config){
+
+     _event.setConsumerId(config.consumerId ? config.consumerId : uuid.v4());
 
     if (!rabbitPromise) {
         rabbitPromise = Promise
