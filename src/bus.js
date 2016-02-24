@@ -3,7 +3,10 @@
 var Rabbit = require("wascally");
 var Promise = require("bluebird");
 var logger = require("./logging")();
-var _event = require('./event');
+var Event = require('./event');
+var Command = require('./command');
+const util = require('util');
+const filter = require('./filter');
 
 var uuid = require("node-uuid");
 
@@ -31,9 +34,14 @@ process.on("unhandledRejection", errorHandler);
 
 var rabbitPromise;
 
-module.exports = function(config){
+var registeredBuses = {};
 
-     _event.setConsumerId(config.consumerId ? config.consumerId : uuid.v4());
+function Bus (config, consumerId) {
+
+    var registered = {
+        events: {},
+        commands: {}
+    };
 
     if (!rabbitPromise) {
         rabbitPromise = Promise
@@ -41,10 +49,33 @@ module.exports = function(config){
             .then(function(){
                 return Rabbit;
             });
-        _event.init(rabbitPromise);
     }
 
-    return {
-        event: _event.factory
+    this.event = function(eventName) {
+        var eventNameFiltered = filter.string(eventName);
+
+        if (!registered.events[eventNameFiltered]) {
+            registered.events[eventNameFiltered] = Event(eventNameFiltered, rabbitPromise, consumerId);
+        }
+
+        return registered.events[eventNameFiltered];
+    };
+
+    this.command = function(commandName) {
+        return Command(commandName, rabbitPromise, consumerId, this);
+    };
+
+    logger.debug("bus created, with configs", config);
+}
+
+module.exports = function(config){
+    var consumerId = config.consumerId ? config.consumerId : uuid.v4();
+
+    consumerId = filter.string(consumerId);
+
+    if (!registeredBuses[consumerId]) {
+        registeredBuses[consumerId] = new Bus(config, consumerId);
     }
+
+    return registeredBuses[consumerId];
 };

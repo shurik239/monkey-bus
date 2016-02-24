@@ -1,20 +1,23 @@
 "use strict";
 
 var Rabbus = require("rabbus");
-var logger = require("../logging")("bus-event");
+var logger = require("../logging")("bus-command");
 var util = require('util');
 var filter = require('../filter');
 
-function EventClass(eventName, rabbitPromise, consumerId) {
+const commandExchangeName = "command.exchange";
+
+function CommandClass(commandName, rabbitPromise, consumerId, bus) {
 
     var producerPromise, consumerPromise;
 
     var getProducerPromise = function(){
         if (!producerPromise) {
             producerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['event', eventName].join('.');
-                var producer = new Rabbus.Publisher(rabbit, {
-                    exchange: fullPath,
+                var fullPath = ['command', commandName].join('.');
+
+                var producer = new Rabbus.Sender(rabbit, {
+                    exchange: commandExchangeName,
                     routingKey: fullPath,
                     messageType: fullPath
                 });
@@ -22,7 +25,7 @@ function EventClass(eventName, rabbitPromise, consumerId) {
                     logger.error(err.message, err.stackTrace);
                     throw err;
                 });
-                logger.debug('created producer for event ' + eventName);
+                logger.debug('created producer for command ' + commandName);
                 return producer;
             });
         }
@@ -33,9 +36,9 @@ function EventClass(eventName, rabbitPromise, consumerId) {
     var getConsumerPromise = function(){
         if (!consumerPromise) {
             consumerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['event', eventName].join('.');
-                var consumer = new Rabbus.Subscriber(rabbit, {
-                    exchange: fullPath,
+                var fullPath = ['command', commandName].join('.');
+                var consumer = new Rabbus.Receiver(rabbit, {
+                    exchange: commandExchangeName,
                     queue: [fullPath, consumerId].join('.'),
                     routingKey: fullPath,
                     messageType: fullPath
@@ -44,7 +47,7 @@ function EventClass(eventName, rabbitPromise, consumerId) {
                     logger.error(err.message, err.stack);
                     throw err;
                 });
-                logger.debug('created consumer ' + consumerId + ' for event ' + eventName);
+                logger.debug('created consumer ' + consumerId + ' for command ' + commandName);
                 return consumer;
             });
         }
@@ -52,26 +55,28 @@ function EventClass(eventName, rabbitPromise, consumerId) {
         return consumerPromise;
     };
 
-    this.publish = function(message) {
+    this.send = function(message) {
         return getProducerPromise().then(function(producer){
-            producer.publish(message);
+            producer.send(message);
             return producer;
         });
     };
 
-    this.subscribe = function(callback) {
+    this.receive = function(callback) {
         return getConsumerPromise().then(function(consumer){
-            consumer.subscribe(function(message, properties, actions, next){
+            consumer.receive(function(message, properties, actions, next){
                 actions.ack();
                 callback(message);
+                bus.event(['command', commandName, 'done'].join('.')).publish({});
             });
             return consumer;
         });
     };
 
-    logger.debug('event ' + eventName + ' created');
+    logger.debug('command ' + commandName + ' created');
 }
 
-module.exports = function(eventName, rabbitPromis, consumerId) {
-    return new EventClass(filter.string(eventName), rabbitPromis, consumerId);
+module.exports = function(commandName, rabbitPromis, consumerId, bus) {
+    return new CommandClass(filter.string(commandName), rabbitPromis, consumerId, bus);
 };
+
