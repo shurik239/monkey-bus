@@ -5,6 +5,7 @@ var Promise = require("bluebird");
 var logger = require("./logging")();
 var Event = require('./event');
 var Command = require('./command');
+var Request = require('./request');
 const util = require('util');
 const filter = require('./filter');
 
@@ -66,7 +67,7 @@ function Bus (config, consumerId) {
     };
 
     this.request = function(requestName) {
-
+        return Request(requestName, rabbitPromise, consumerId);
     };
 
     logger.debug("bus created, with configs", config);
