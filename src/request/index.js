@@ -6,7 +6,7 @@ var filter = require('../filter');
 var createCustomerOrProducerPromise = require('../factory');
 
 const entityType = "request";
-const entityExchangeName = entityType + "exchange";
+const entityExchangeName = entityType + ".exchange";
 
 var producerClass = 'Requester';
 var consumerClass = 'Responder';
@@ -20,10 +20,7 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
     var getProducerPromise = function(){
         if (!producerPromise) {
             var options = {
-                exchange: {
-                    name: entityExchangeName,
-                    type: "topic"
-                },
+                exchange: entityExchangeName,
                 routingKey: fullPath,
                 messageType: fullPath
             };
@@ -43,10 +40,7 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
     var getConsumerPromise = function(){
         if (!consumerPromise) {
             var options = {
-                exchange: {
-                    name: entityExchangeName,
-                    type: "topic"
-                },
+                exchange: entityExchangeName,
                 queue: {
                     name: [fullPath, consumerId].join('.'),
                     limit: 1

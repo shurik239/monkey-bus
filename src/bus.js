@@ -72,7 +72,7 @@ function Bus (config, consumerId) {
     };
 
     this.process = function(fsmName) {
-        return Process(fsmName, consumerId, this);
+        return Process(fsmName, this);
     };
 
     logger.debug("bus created, with configs", config);

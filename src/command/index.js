@@ -6,7 +6,7 @@ var filter = require('../filter');
 var createCustomerOrProducerPromise = require('../factory');
 
 const entityType = "command";
-const entityExchangeName = entityType + "exchange";
+const entityExchangeName = entityType + ".exchange";
 
 var producerClass = 'Sender';
 var consumerClass = 'Receiver';
