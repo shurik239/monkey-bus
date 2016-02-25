@@ -1,36 +1,40 @@
 "use strict";
 
-var Rabbus = require("rabbus");
 var logger = require("../logging")("bus-request");
 var util = require('util');
 var filter = require('../filter');
+var createCustomerOrProducerPromise = require('../factory');
 
-const requestExchangeName = "request.exchange";
+const entityType = "request";
+const entityExchangeName = entityType + "exchange";
 
-function RequestClass(requestName, rabbitPromise, consumerId, bus) {
+var producerClass = 'Requester';
+var consumerClass = 'Responder';
+
+function RequestClass(entityName, rabbitPromise, consumerId, bus) {
 
     var producerPromise, consumerPromise;
 
+    var fullPath = [entityType, entityName].join('.');
+
     var getProducerPromise = function(){
         if (!producerPromise) {
-            producerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['request', requestName].join('.');
+            var options = {
+                exchange: {
+                    name: entityExchangeName,
+                    type: "topic"
+                },
+                routingKey: fullPath,
+                messageType: fullPath
+            };
 
-                var producer = new Rabbus.Requester(rabbit, {
-                    exchange: {
-                        name: requestExchangeName,
-                        type: "topic"
-                    },
-                    routingKey: fullPath,
-                    messageType: fullPath
-                });
-                producer.use(function(err, message, properties, actions, next){
-                    logger.error(err.message, err.stackTrace);
-                    throw err;
-                });
-                logger.debug('created producer for request ' + requestName);
-                return producer;
-            });
+            producerPromise = createCustomerOrProducerPromise(
+                rabbitPromise,
+                entityName,
+                producerClass,
+                options,
+                entityType
+            );
         }
 
         return producerPromise;
@@ -38,27 +42,26 @@ function RequestClass(requestName, rabbitPromise, consumerId, bus) {
 
     var getConsumerPromise = function(){
         if (!consumerPromise) {
-            consumerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['request', requestName].join('.');
-                var consumer = new Rabbus.Responder(rabbit, {
-                    exchange: {
-                        name: requestExchangeName,
-                        type: "topic"
-                    },
-                    queue: {
-                        name: [fullPath, consumerId].join('.'),
-                        limit: 1
-                    },
-                    routingKey: fullPath,
-                    messageType: fullPath
-                });
-                consumer.use(function(err, message, properties, actions, next){
-                    logger.error(err.message, err.stack);
-                    throw err;
-                });
-                logger.debug('created consumer ' + consumerId + ' for request ' + requestName);
-                return consumer;
-            });
+            var options = {
+                exchange: {
+                    name: entityExchangeName,
+                    type: "topic"
+                },
+                queue: {
+                    name: [fullPath, consumerId].join('.'),
+                    limit: 1
+                },
+                routingKey: fullPath,
+                messageType: fullPath
+            };
+
+            consumerPromise = createCustomerOrProducerPromise(
+                rabbitPromise,
+                entityName,
+                consumerClass,
+                options,
+                entityType
+            );
         }
 
         return consumerPromise;
@@ -83,7 +86,7 @@ function RequestClass(requestName, rabbitPromise, consumerId, bus) {
         });
     };
 
-    logger.debug('request ' + requestName + ' created');
+    logger.debug(entityType + ' ' + entityName + ' created');
 }
 
 module.exports = function(requestName, rabbitPromis, consumerId, bus) {

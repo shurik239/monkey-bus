@@ -6,6 +6,7 @@ var logger = require("./logging")();
 var Event = require('./event');
 var Command = require('./command');
 var Request = require('./request');
+var Process = require('./process');
 const util = require('util');
 const filter = require('./filter');
 
@@ -68,6 +69,10 @@ function Bus (config, consumerId) {
 
     this.request = function(requestName) {
         return Request(requestName, rabbitPromise, consumerId);
+    };
+
+    this.process = function(fsmName) {
+        return Process(fsmName, consumerId, this);
     };
 
     logger.debug("bus created, with configs", config);

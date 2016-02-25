@@ -29,6 +29,10 @@ describe("bus", function () {
             assert.isFunction(busSUT.request);
         });
 
+        it("process method", function () {
+            assert.isFunction(busSUT.process);
+        });
+
     });
 
     describe("#constructor", function(){

@@ -1,30 +1,35 @@
 "use strict";
 
-var Rabbus = require("rabbus");
 var logger = require("../logging")("bus-event");
 var util = require('util');
 var filter = require('../filter');
+var createCustomerOrProducerPromise = require('../factory');
 
-function EventClass(eventName, rabbitPromise, consumerId) {
+const entityType = "event";
+
+var producerClass = 'Publisher';
+var consumerClass = 'Subscriber';
+
+function EventClass(entityName, rabbitPromise, consumerId) {
 
     var producerPromise, consumerPromise;
 
+    var fullPath = [entityType, entityName].join('.');
+
     var getProducerPromise = function(){
         if (!producerPromise) {
-            producerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['event', eventName].join('.');
-                var producer = new Rabbus.Publisher(rabbit, {
-                    exchange: fullPath,
-                    routingKey: fullPath,
-                    messageType: fullPath
-                });
-                producer.use(function(err, message, properties, actions, next){
-                    logger.error(err.message, err.stackTrace);
-                    throw err;
-                });
-                logger.debug('created producer for event ' + eventName);
-                return producer;
-            });
+            var options = {
+                exchange: fullPath,
+                routingKey: fullPath,
+                messageType: fullPath
+            };
+            producerPromise = createCustomerOrProducerPromise(
+                rabbitPromise,
+                entityName,
+                producerClass,
+                options,
+                entityType
+            );
         }
 
         return producerPromise;
@@ -32,21 +37,19 @@ function EventClass(eventName, rabbitPromise, consumerId) {
 
     var getConsumerPromise = function(){
         if (!consumerPromise) {
-            consumerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['event', eventName].join('.');
-                var consumer = new Rabbus.Subscriber(rabbit, {
-                    exchange: fullPath,
-                    queue: [fullPath, consumerId].join('.'),
-                    routingKey: fullPath,
-                    messageType: fullPath
-                });
-                consumer.use(function(err, message, properties, actions, next){
-                    logger.error(err.message, err.stack);
-                    throw err;
-                });
-                logger.debug('created consumer ' + consumerId + ' for event ' + eventName);
-                return consumer;
-            });
+            var options = {
+                exchange: fullPath,
+                queue: [fullPath, consumerId].join('.'),
+                routingKey: fullPath,
+                messageType: fullPath
+            };
+            consumerPromise = createCustomerOrProducerPromise(
+                rabbitPromise,
+                entityName,
+                consumerClass,
+                options,
+                entityType
+            );
         }
 
         return consumerPromise;
@@ -69,7 +72,7 @@ function EventClass(eventName, rabbitPromise, consumerId) {
         });
     };
 
-    logger.debug('event ' + eventName + ' created');
+    logger.debug(entityType+ ' ' + entityName + ' created');
 }
 
 module.exports = function(eventName, rabbitPromis, consumerId) {

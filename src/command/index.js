@@ -1,33 +1,37 @@
 "use strict";
 
-var Rabbus = require("rabbus");
 var logger = require("../logging")("bus-command");
 var util = require('util');
 var filter = require('../filter');
+var createCustomerOrProducerPromise = require('../factory');
 
-const commandExchangeName = "command.exchange";
+const entityType = "command";
+const entityExchangeName = entityType + "exchange";
 
-function CommandClass(commandName, rabbitPromise, consumerId, bus) {
+var producerClass = 'Sender';
+var consumerClass = 'Receiver';
+
+function CommandClass(entityName, rabbitPromise, consumerId, bus) {
 
     var producerPromise, consumerPromise;
 
+    var fullPath = [entityType, entityName].join('.');
+
     var getProducerPromise = function(){
         if (!producerPromise) {
-            producerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['command', commandName].join('.');
+            var options = {
+                exchange: entityExchangeName,
+                routingKey: fullPath,
+                messageType: fullPath
+            };
 
-                var producer = new Rabbus.Sender(rabbit, {
-                    exchange: commandExchangeName,
-                    routingKey: fullPath,
-                    messageType: fullPath
-                });
-                producer.use(function(err, message, properties, actions, next){
-                    logger.error(err.message, err.stackTrace);
-                    throw err;
-                });
-                logger.debug('created producer for command ' + commandName);
-                return producer;
-            });
+            producerPromise = createCustomerOrProducerPromise(
+                rabbitPromise,
+                entityName,
+                producerClass,
+                options,
+                entityType
+            );
         }
 
         return producerPromise;
@@ -35,21 +39,20 @@ function CommandClass(commandName, rabbitPromise, consumerId, bus) {
 
     var getConsumerPromise = function(){
         if (!consumerPromise) {
-            consumerPromise = rabbitPromise.then(function(rabbit) {
-                var fullPath = ['command', commandName].join('.');
-                var consumer = new Rabbus.Receiver(rabbit, {
-                    exchange: commandExchangeName,
-                    queue: [fullPath, consumerId].join('.'),
-                    routingKey: fullPath,
-                    messageType: fullPath
-                });
-                consumer.use(function(err, message, properties, actions, next){
-                    logger.error(err.message, err.stack);
-                    throw err;
-                });
-                logger.debug('created consumer ' + consumerId + ' for command ' + commandName);
-                return consumer;
-            });
+            var options = {
+                exchange: entityExchangeName,
+                queue: [fullPath, consumerId].join('.'),
+                routingKey: fullPath,
+                messageType: fullPath
+            };
+
+            consumerPromise = createCustomerOrProducerPromise(
+                rabbitPromise,
+                entityName,
+                consumerClass,
+                options,
+                entityType
+            );
         }
 
         return consumerPromise;
@@ -67,13 +70,13 @@ function CommandClass(commandName, rabbitPromise, consumerId, bus) {
             consumer.receive(function(message, properties, actions, next){
                 actions.ack();
                 var commandResult = callback(message);
-                bus.event(['command', commandName, 'done'].join('.')).publish(commandResult);
+                bus.event([entityType, entityName, 'done'].join('.')).publish(commandResult);
             });
             return consumer;
         });
     };
 
-    logger.debug('command ' + commandName + ' created');
+    logger.debug(entityType + ' ' + entityName + ' created');
 }
 
 module.exports = function(commandName, rabbitPromis, consumerId, bus) {
