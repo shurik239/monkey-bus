@@ -26,10 +26,6 @@ describe("command", function () {
     var commandSUT = require('../src/command');
     var bus = require('../src/bus')(config);
 
-    after(function(){
-        Rabbit.closeAll();
-    });
-
     describe('#constructor', function() {
 
         it("should throw exception if command name is not a string", function(){

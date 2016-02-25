@@ -26,10 +26,6 @@ describe("request", function () {
     var requestSUT = require('../src/request');
     var bus = require('../src/bus')(config);
 
-    after(function(){
-        Rabbit.closeAll();
-    });
-
     describe('#constructor', function() {
 
         it("should throw exception if request name is not a string", function(){
@@ -76,7 +72,7 @@ describe("request", function () {
                 subscriber.on("ready", function(){
                     request.request(producedMessage).then(function(message){
                         assert.deepEqual(message, requestDoneMessage);
-                        setTimeout(done, 250);
+                        setTimeout(done, 500);
                     });
                 });
             });
