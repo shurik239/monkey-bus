@@ -4,7 +4,7 @@
   "description": "A micro-service bus framework for RabbitMQ",
   "main": "src/bus.js",
   "scripts": {
-    "test": "grunt specs"
+    "test": "mocha tests"
   },
   "repository": {
     "type": "git",
