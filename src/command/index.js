@@ -66,8 +66,8 @@ function CommandClass(commandName, rabbitPromise, consumerId, bus) {
         return getConsumerPromise().then(function(consumer){
             consumer.receive(function(message, properties, actions, next){
                 actions.ack();
-                callback(message);
-                bus.event(['command', commandName, 'done'].join('.')).publish({});
+                var commandResult = callback(message);
+                bus.event(['command', commandName, 'done'].join('.')).publish(commandResult);
             });
             return consumer;
         });

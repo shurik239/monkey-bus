@@ -59,21 +59,24 @@ describe("command", function () {
         const commandName = 'test.command.name';
 
         it("command should produce event done", function(done) {
-            bus.event(['command', commandName, 'done'].join('.')).subscribe(function(message){
-                setTimeout(done, 250);
-            });
-        });
-
-        it("publish should produce message", function(done) {
             var producedMessage = {
                 foo: 'bar'
             };
+
+            var commandDoneMessage = {
+                bar: 'foo'
+            };
+
+            bus.event(['command', commandName, 'done'].join('.')).subscribe(function(message){
+                assert.deepEqual(message, commandDoneMessage);
+                setTimeout(done, 250);
+            });
 
             var command = bus.command(commandName);
 
             command.receive(function (consumedMessage) {
                 assert.deepEqual(consumedMessage, producedMessage);
-                setTimeout(done, 250);
+                return commandDoneMessage;
             }).then(function(subscriber){
                 subscriber.on("ready", function(){
                     command.send(producedMessage);

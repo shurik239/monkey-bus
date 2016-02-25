@@ -24,6 +24,11 @@ describe("bus", function () {
         it("command method", function () {
             assert.isFunction(busSUT.command);
         });
+
+        it("request method", function () {
+            assert.isFunction(busSUT.request);
+        });
+
     });
 
     describe("#constructor", function(){

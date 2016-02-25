@@ -3,6 +3,8 @@
 var chai = require("chai");
 var assert = chai.assert;
 
+var Rabbit = require("wascally");
+
 function reportErr(err){
     setImmediate(function(){
         console.log(err.stack);
@@ -13,9 +15,11 @@ function reportErr(err){
 process.on("unhandledException", reportErr);
 process.on("unhandledRejection", reportErr);
 
-describe("event", function () {
+after(function(){
+    Rabbit.closeAll();
+});
 
-    var Rabbit = require("wascally");
+describe("event", function () {
 
     var config = require('./config.json');
     var pro = Promise
@@ -24,10 +28,6 @@ describe("event", function () {
             return Rabbit;
         });
     var eventSUT = require('../src/event');
-
-    after(function(){
-        Rabbit.closeAll();
-    });
 
     describe('#constructor', function() {
 

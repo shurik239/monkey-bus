@@ -65,6 +65,10 @@ function Bus (config, consumerId) {
         return Command(commandName, rabbitPromise, consumerId, this);
     };
 
+    this.request = function(requestName) {
+
+    };
+
     logger.debug("bus created, with configs", config);
 }
 
