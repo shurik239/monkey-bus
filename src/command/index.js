@@ -41,7 +41,10 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
         if (!consumerPromise) {
             var options = {
                 exchange: entityExchangeName,
-                queue: [fullPath, consumerId].join('.'),
+                queue: {
+                    name: [fullPath, consumerId].join('.'),
+                    autoDelete: true
+                },
                 routingKey: fullPath,
                 messageType: fullPath
             };

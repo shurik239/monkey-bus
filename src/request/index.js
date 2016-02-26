@@ -43,7 +43,8 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
                 exchange: entityExchangeName,
                 queue: {
                     name: [fullPath, consumerId].join('.'),
-                    limit: 1
+                    limit: 1,
+                    autoDelete: true
                 },
                 routingKey: fullPath,
                 messageType: fullPath

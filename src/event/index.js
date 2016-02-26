@@ -39,7 +39,10 @@ function EventClass(entityName, rabbitPromise, consumerId) {
         if (!consumerPromise) {
             var options = {
                 exchange: fullPath,
-                queue: [fullPath, consumerId].join('.'),
+                queue: {
+                    name: [fullPath, consumerId].join('.'),
+                    autoDelete: false
+                },
                 routingKey: fullPath,
                 messageType: fullPath
             };
@@ -55,17 +58,22 @@ function EventClass(entityName, rabbitPromise, consumerId) {
         return consumerPromise;
     };
 
-    this.publish = function(message) {
+    this.publish = function(message, properties) {
+        properties = properties || {};
+
         return getProducerPromise().then(function(producer){
-            producer.publish(message);
+            producer.publish(message, properties);
             return producer;
         });
     };
 
-    this.subscribe = function(callback) {
+    this.subscribe = function(callback, correlationId) {
         return getConsumerPromise().then(function(consumer){
             consumer.subscribe(function(message, properties, actions, next){
                 actions.ack();
+                if (correlationId && properties.correlationId !== correlationId) {
+                    return;
+                }
                 callback(message);
             });
             return consumer;

@@ -38,14 +38,41 @@ describe("process", function () {
             assert.notStrictEqual(process1, process2);
         });
         it("process start should publish event created", function(done){
-            bus.process(existedFSM).start();
+            var consumer;
+
+            var doneAllreadySent = false;
+
             bus.event('process.' + existedFSM + '.started').subscribe(function(message){
+                if (doneAllreadySent) return;
                 setTimeout(done, 250);
+                doneAllreadySent = true;
+            })
+            .then(function(cons){
+                consumer = cons;
+                bus.process(existedFSM).start();
             });
         });
+        //it("client can subscribe only on events of this process", function(done){
+        //    var process1 = bus.process(existedFSM);
+        //    var process2 = bus.process(existedFSM);
+        //
+        //    process2.on('started', function(message){
+        //        console.log('her');
+        //        assert.deepEqual(message.payload, {
+        //            test: '2'
+        //        });
+        //        setTimeout(done, 500);
+        //    }).then(function(cons){
+        //        cons.on("ready", function(){
+        //            process1.start({
+        //                test: '1'
+        //            });
+        //            process2.start({
+        //                test: '2'
+        //            });
+        //        });
+        //    });
+        //});
     });
 
-    describe('send/receive should handle message', function() {
-
-    });
 });

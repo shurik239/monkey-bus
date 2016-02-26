@@ -6,7 +6,7 @@ const processNS = "process";
 
 var snapshot = function(data) {
     var cache = [];
-    return JSON.stringify(data, function(key, value) {
+    var str = JSON.stringify(data, function(key, value) {
         if (typeof value === 'object' && value !== null) {
             if (key === "timer") {
                 return
@@ -19,7 +19,10 @@ var snapshot = function(data) {
         }
         return value;
     });
+    return JSON.parse(str);
 };
+
+var registeredProcesses = {};
 
 function ProcessClass(fsm, bus, fsmName) {
 
@@ -27,37 +30,51 @@ function ProcessClass(fsm, bus, fsmName) {
 
     this.client = {
         id: this.id
-    }
+    };
 
     this.start = function(payload) {
         this.client.payload = payload;
         fsm.start(this.client);
         var client = snapshot( this.client );
-        bus.event([processNS, fsmName, 'started'].join('.')).publish(client);
-    }
+        bus.event([processNS, fsmName, 'started'].join('.')).publish(client, {
+            correlationId: this.id
+        });
+    };
+
+    this.on = function(eventName, callback){
+        return bus.event([processNS, fsmName, eventName].join('.')).subscribe(callback, this.id);
+    };
+
+    fsm.on("*", function (event, payload){
+        if (payload.client.id === this.id) {
+            bus.event([processNS, fsmName, event].join('.')).publish(payload, {
+                correlationId: this.id
+            });
+        }
+    }.bind(this));
+
 }
 
 var registeredFSMs = {};
 
-function fsmFactory(fsmName) {
+function fsmFactory(fsmName, bus) {
     var fsm = require('./fsm/' + fsmName );
     fsm.namespace = fsmName;
-    fsm.on("*", function (){
-        logger.debug('received from fsm ' + fsmName, arguments);
-    });
     return fsm;
 }
 
-function getFsm(fsmName) {
+function getFsm(fsmName, bus) {
     if (!registeredFSMs[fsmName]) {
-        registeredFSMs[fsmName] = fsmFactory(fsmName);
+        registeredFSMs[fsmName] = fsmFactory(fsmName, bus);
+        logger.debug('fsm "' + fsmName + '" created');
     }
-    logger.debug('fsm "' + fsmName + '" created');
     return registeredFSMs[fsmName];
 }
 
 module.exports = function(_fsmName, bus) {
     var fsmName = filter.string(_fsmName)
-    var fsm = getFsm(fsmName);
-    return new ProcessClass(fsm, bus, fsmName);
+    var fsm = getFsm(fsmName, bus);
+    var instance = new ProcessClass(fsm, bus, fsmName);
+    registeredProcesses[instance.id] = instance;
+    return instance;
 };
