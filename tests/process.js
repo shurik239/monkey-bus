@@ -32,14 +32,15 @@ describe("process", function () {
             });
         });
         it("process should return to different objects", function(){
-            var process1 = bus.process('command.call');
-            var process2 = bus.process('command.call');
+            var process1 = bus.process(existedFSM);
+            var process2 = bus.process(existedFSM);
 
             assert.notStrictEqual(process1, process2);
         });
-        it("process should publish event created", function(done){
-            bus.event('process.' + existedFSM + '.created').subscribe(function(){
-                done();
+        it("process start should publish event created", function(done){
+            bus.process(existedFSM).start();
+            bus.event('process.' + existedFSM + '.started').subscribe(function(message){
+                setTimeout(done, 250);
             });
         });
     });

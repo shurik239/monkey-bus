@@ -4,7 +4,24 @@ var uuid = require("node-uuid");
 
 const processNS = "process";
 
-function ProcessClass(fsm, bus) {
+var snapshot = function(data) {
+    var cache = [];
+    return JSON.stringify(data, function(key, value) {
+        if (typeof value === 'object' && value !== null) {
+            if (key === "timer") {
+                return
+            }
+
+            if (cache.indexOf(value) !== -1) {
+                return JSON.parse(JSON.stringify(value));
+            }
+            cache.push(value);
+        }
+        return value;
+    });
+};
+
+function ProcessClass(fsm, bus, fsmName) {
 
     this.id = uuid.v4();
 
@@ -15,7 +32,8 @@ function ProcessClass(fsm, bus) {
     this.start = function(payload) {
         this.client.payload = payload;
         fsm.start(this.client);
-//        bus.event(processNS)
+        var client = snapshot( this.client );
+        bus.event([processNS, fsmName, 'started'].join('.')).publish(client);
     }
 }
 
@@ -41,5 +59,5 @@ function getFsm(fsmName) {
 module.exports = function(_fsmName, bus) {
     var fsmName = filter.string(_fsmName)
     var fsm = getFsm(fsmName);
-    return new ProcessClass(fsm, bus);
+    return new ProcessClass(fsm, bus, fsmName);
 };
