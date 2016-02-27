@@ -61,9 +61,10 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
         return consumerPromise;
     };
 
-    this.send = function(message) {
+    this.send = function(message, properties) {
+        var properties = properties || {}
         return getProducerPromise().then(function(producer){
-            producer.send(message);
+            producer.send(message, properties);
             return producer;
         });
     };
@@ -73,7 +74,11 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
             consumer.receive(function(message, properties, actions, next){
                 actions.ack();
                 var commandResult = callback(message);
-                bus.event([entityType, entityName, 'done'].join('.')).publish(commandResult);
+                var props = {};
+                if (properties.correlationId) {
+                    props.correlationId = properties.correlationId;
+                }
+                bus.event([entityType, entityName, 'done'].join('.')).publish(commandResult, props);
             });
             return consumer;
         });
