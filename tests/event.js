@@ -69,9 +69,7 @@ describe("event", function () {
                 assert.deepEqual(consumedMessage, producedMessage);
                 setTimeout(done, 250);
             }).then(function(subscriber){
-                subscriber.on("ready", function(){
-                    event.publish(producedMessage);
-                });
+                event.publish(producedMessage);
             });
         });
     });

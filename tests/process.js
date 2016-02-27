@@ -49,30 +49,30 @@ describe("process", function () {
             })
             .then(function(cons){
                 consumer = cons;
-                bus.process(existedFSM).start();
+                setTimeout(function(){
+                    bus.process(existedFSM).start(),
+                    250
+                })
             });
         });
-        //it("client can subscribe only on events of this process", function(done){
-        //    var process1 = bus.process(existedFSM);
-        //    var process2 = bus.process(existedFSM);
-        //
-        //    process2.on('started', function(message){
-        //        console.log('her');
-        //        assert.deepEqual(message.payload, {
-        //            test: '2'
-        //        });
-        //        setTimeout(done, 500);
-        //    }).then(function(cons){
-        //        cons.on("ready", function(){
-        //            process1.start({
-        //                test: '1'
-        //            });
-        //            process2.start({
-        //                test: '2'
-        //            });
-        //        });
-        //    });
-        //});
+        it("client can subscribe only on events of this process", function(done){
+            var process1 = bus.process(existedFSM);
+            var process2 = bus.process(existedFSM);
+
+            process2.on('started', function(message){
+                assert.deepEqual(message.payload, {
+                    test: '2'
+                });
+                setTimeout(done, 500);
+            }).then(function(cons){
+                process1.start({
+                    test: '1'
+                });
+                process2.start({
+                    test: '2'
+                });
+            });
+        });
     });
 
 });

@@ -68,15 +68,22 @@ function EventClass(entityName, rabbitPromise, consumerId) {
     };
 
     this.subscribe = function(callback, correlationId) {
-        return getConsumerPromise().then(function(consumer){
-            consumer.subscribe(function(message, properties, actions, next){
-                actions.ack();
-                if (correlationId && properties.correlationId !== correlationId) {
-                    return;
-                }
-                callback(message);
+        return new Promise(function (resolve, reject) {
+            return getConsumerPromise().then(function(consumer){
+                consumer.subscribe(function(message, properties, actions, next){
+                    actions.ack();
+                    if (correlationId && properties.correlationId !== correlationId) {
+                        return;
+                    }
+                    callback(message);
+                });
+                return consumer;
+            }).then(function(consumer) {
+                consumer.on("ready", function(){
+                    resolve(consumer);
+                })
             });
-            return consumer;
+
         });
     };
 
