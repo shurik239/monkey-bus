@@ -6,15 +6,10 @@ var vehicleSignal = new baseFSM( {
             "start": function( process ) {
                 process.bus.event(['command', process.payload.commandName, 'done'].join('.'))
                     .subscribe(
-                        function(doneData){
-                            process.payload.commandDone = doneData;
-                            this.transition(process, 'doneEventConsumed')
-                        }.bind(this),
+                        this.handle.bind(this, process, 'doneEventComing'),
                         process.id
                     ).then(
-                        function () {
-                            this.transition(process, 'doneEventSubscribed')
-                        }.bind(this)
+                        this.transition.bind(this, process, 'doneEventSubscribed')
                     );
             }
         },
@@ -23,6 +18,10 @@ var vehicleSignal = new baseFSM( {
                 process.bus.command(process.payload.commandName).send(process.payload.commandArgs, {
                     correlationId: process.id
                 });
+            },
+            doneEventComing: function(process, doneData) {
+                process.payload.commandDone = doneData;
+                this.transition(process, 'doneEventConsumed');
             }
         },
         doneEventConsumed: {
