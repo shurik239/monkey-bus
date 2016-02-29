@@ -64,6 +64,10 @@ function EventClass(entityName, rabbitPromise, consumerId) {
         return getProducerPromise().then(function(producer){
             producer.publish(message, properties);
             return producer;
+        }).then(function(producer){
+            logger.info('Event ' + entityName + ' published');
+            logger.debug(message);
+            return producer;
         });
     };
 

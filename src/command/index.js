@@ -43,7 +43,7 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
                 exchange: entityExchangeName,
                 queue: {
                     name: [fullPath, consumerId].join('.'),
-                    autoDelete: true
+                    autoDelete: false
                 },
                 routingKey: fullPath,
                 messageType: fullPath
@@ -62,7 +62,8 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
     };
 
     this.send = function(message, properties) {
-        var properties = properties || {}
+        var properties = properties || {};
+        var message = message || {};
         return getProducerPromise().then(function(producer){
             producer.send(message, properties);
             return producer;

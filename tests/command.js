@@ -79,5 +79,13 @@ describe("command", function () {
                 });
             });
         });
+
+        it("command has to handle empty arguments", function () {
+            assert.doesNotThrow(function () {
+                bus.command('somecommand').send();
+            });
+        });
+
     });
+
 });

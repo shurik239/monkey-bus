@@ -27,15 +27,13 @@ var registeredProcesses = {};
 function ProcessClass(fsm, bus, fsmName) {
 
     this.id = uuid.v4();
-
-    this.client = {
-        id: this.id
-    };
+    this.bus = bus;
+    this.payload = null;
 
     this.start = function(payload) {
-        this.client.payload = payload;
-        fsm.start(this.client);
-        var client = snapshot( this.client );
+        this.payload = payload;
+        fsm.start(this);
+        var client = snapshot( this );
         bus.event([processNS, fsmName, 'started'].join('.')).publish(client, {
             correlationId: this.id
         });
@@ -45,9 +43,9 @@ function ProcessClass(fsm, bus, fsmName) {
         return bus.event([processNS, fsmName, eventName].join('.')).subscribe(callback, this.id);
     };
 
-    fsm.on("*", function (event, payload){
-        if (payload.client.id === this.id) {
-            bus.event([processNS, fsmName, event].join('.')).publish(payload, {
+    fsm.on("*", function (event, data){
+        if (data.client.id === this.id) {
+            bus.event([processNS, fsmName, event].join('.')).publish(data.client.payload, {
                 correlationId: this.id
             });
         }

@@ -50,7 +50,9 @@ describe("process", function () {
             .then(function(cons){
                 consumer = cons;
                 setTimeout(function(){
-                    bus.process(existedFSM).start(),
+                    bus.process(existedFSM).start({
+                        commandName: 'someCommand'
+                    }),
                     250
                 })
             });
@@ -61,15 +63,15 @@ describe("process", function () {
 
             process2.on('started', function(message){
                 assert.deepEqual(message.payload, {
-                    test: '2'
+                    commandName: 'somecommand2'
                 });
                 setTimeout(done, 500);
             }).then(function(cons){
                 process1.start({
-                    test: '1'
+                    commandName: 'somecommand1'
                 });
                 process2.start({
-                    test: '2'
+                    commandName: 'somecommand2'
                 });
             });
         });
