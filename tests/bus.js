@@ -75,4 +75,16 @@ describe("bus", function () {
         });
 
     });
+
+    describe("#init", function() {
+        it("should be able to load topology from global.__baseAppDir directory", function (done) {
+            global.__baseAppDir = __dirname + '/fixture/';
+            assert.doesNotThrow(function() {
+                Bus(config).init().then(function(){
+                    delete global.__baseAppDir;
+                    done();
+                });
+            });
+        });
+    });
 });

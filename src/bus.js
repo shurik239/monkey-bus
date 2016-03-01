@@ -10,6 +10,8 @@ var Process = require('./process');
 const util = require('util');
 const filter = require('./filter');
 
+var fs = Promise.promisifyAll(require("fs"));
+
 var uuid = require("node-uuid");
 
 function exit(){
@@ -73,6 +75,41 @@ function Bus (config, consumerId) {
 
     this.process = function(fsmName) {
         return Process(fsmName, this);
+    };
+
+    this.init = function() {
+        var proms = {};
+
+        function cutExtension(fileName){
+            return fileName.slice(0, -3);
+        }
+
+        proms['commands'] =
+            fs.readdirAsync(global.__baseAppDir + 'consume/command/')
+                .each(cutExtension)
+                .each(function registerConsumer(entityName){
+                    var consumer = require(global.__baseAppDir + 'consume/command/' + entityName);
+                    return this.command(entityName).receive(consumer);
+                }.bind(this));
+
+        proms['request'] =
+            fs.readdirAsync(global.__baseAppDir + 'consume/request/')
+                .each(cutExtension)
+                .each(function registerConsumer(entityName){
+                    var consumer = require(global.__baseAppDir + 'consume/request/' + entityName);
+                    return this.request(entityName).handle(consumer);
+                }.bind(this));
+
+        proms['event'] =
+            fs.readdirAsync(global.__baseAppDir + 'consume/event/')
+                .each(cutExtension)
+                .each(function registerConsumer(entityName){
+                    var consumer = require(global.__baseAppDir + 'consume/event/' + entityName);
+                    return this.event(entityName).subscribe(consumer);
+                }.bind(this));
+
+        return Promise.props(proms);
+
     };
 
     logger.debug("bus created, with configs", config);
