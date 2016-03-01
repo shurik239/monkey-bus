@@ -1,6 +1,6 @@
 var baseFSM = require('../fsm');
 
-var vehicleSignal = new baseFSM( {
+var fsm = new baseFSM( {
     states: {
         uninitialized: {
             "start": function( process ) {
@@ -25,13 +25,8 @@ var vehicleSignal = new baseFSM( {
             }
         },
         doneEventConsumed: {
-            _onEnter: function (process) {
-                this.emit('command.done', {
-                    client: process
-                });
-            }
         }
     }
 } );
 
-module.exports = vehicleSignal;
+module.exports = fsm;

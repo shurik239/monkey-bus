@@ -7,5 +7,4 @@ module.exports = machina.BehavioralFsm.extend({
     start: function(client ) {
         this.handle( client, "start" );
     }
-
 });

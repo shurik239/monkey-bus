@@ -30,10 +30,16 @@ describe('command.call fsm', function () {
         });
 
         var process = bus.process('command.call');
-        process.on('command.done', function(data) {
-            assert.deepEqual(data.commandDone, commandDoneData);
-            setTimeout(done, 500);
-        }).then(function () {
+        process.on(
+            'transition',
+            function(data) {
+                assert.deepEqual(data.payload.commandDone, commandDoneData);
+                setTimeout(done, 500);
+            },
+            {
+                toState: "doneEventConsumed"
+            }
+        ).then(function () {
             process.start({
                 commandName: 'test.command',
                 commandArgs: commandArguments

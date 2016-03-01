@@ -9,7 +9,7 @@ var snapshot = function(data) {
     var str = JSON.stringify(data, function(key, value) {
         if (typeof value === 'object' && value !== null) {
             if (key === "timer") {
-                return
+                return;
             }
 
             if (cache.indexOf(value) !== -1) {
@@ -33,19 +33,33 @@ function ProcessClass(fsm, bus, fsmName) {
     this.start = function(payload) {
         this.payload = payload;
         fsm.start(this);
-        var client = snapshot( this );
-        bus.event([processNS, fsmName, 'started'].join('.')).publish(client, {
-            correlationId: this.id
-        });
+        //var client = snapshot( this );
+        //bus.event([processNS, fsmName, 'started'].join('.')).publish(client, {
+        //    correlationId: this.id
+        //});
     };
 
-    this.on = function(eventName, callback){
-        return bus.event([processNS, fsmName, eventName].join('.')).subscribe(callback, this.id);
+    this.on = function(eventName, callback, properties){
+        properties = properties || {};
+        return bus.event([processNS, fsmName, eventName].join('.')).subscribe(
+            function (eventPayload) {
+                var eventPayloadHasNeededProperties = true;
+                for (var prop in properties) {
+                    if (!eventPayload[prop] || eventPayload[prop] !== properties[prop]) {
+                        eventPayloadHasNeededProperties = false;
+                        break;
+                    }
+                }
+                if (eventPayloadHasNeededProperties) {
+                    callback(eventPayload.client);
+                }
+            },
+            this.id);
     };
 
     fsm.on("*", function (event, data){
         if (data.client.id === this.id) {
-            bus.event([processNS, fsmName, event].join('.')).publish(data.client.payload, {
+            bus.event([processNS, fsmName, event].join('.')).publish(data, {
                 correlationId: this.id
             });
         }

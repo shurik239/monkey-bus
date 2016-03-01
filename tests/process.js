@@ -37,41 +37,46 @@ describe("process", function () {
 
             assert.notStrictEqual(process1, process2);
         });
-        it("process start should publish event created", function(done){
-            var consumer;
-
-            var doneAllreadySent = false;
-
-            bus.event('process.' + existedFSM + '.started').subscribe(function(message){
-                if (doneAllreadySent) return;
-                setTimeout(done, 250);
-                doneAllreadySent = true;
-            })
-            .then(function(cons){
-                consumer = cons;
-                setTimeout(function(){
-                    bus.process(existedFSM).start({
-                        commandName: 'someCommand'
-                    }),
-                    250
-                })
-            });
-        });
+        //it("process start should publish event created", function(done){
+        //    var consumer;
+        //
+        //    var doneAllreadySent = false;
+        //
+        //    bus.event('process.' + existedFSM + '.started').subscribe(function(message){
+        //        if (doneAllreadySent) return;
+        //        setTimeout(done, 250);
+        //        doneAllreadySent = true;
+        //    })
+        //    .then(function(cons){
+        //        consumer = cons;
+        //        setTimeout(function(){
+        //            bus.process(existedFSM).start({
+        //                commandName: 'someCommand'
+        //            }),
+        //            250
+        //        })
+        //    });
+        //});
         it("client can subscribe only on events of this process", function(done){
             var process1 = bus.process(existedFSM);
             var process2 = bus.process(existedFSM);
 
-            process2.on('started', function(message){
-                assert.deepEqual(message.payload, {
-                    commandName: 'somecommand2'
-                });
-                setTimeout(done, 500);
+            var testCommand = 'somecommand2'
+
+            var doneAlreadyCalled = false;
+
+            process2.on('transition', function(message){
+                assert.equal(message.payload.commandName, testCommand);
+                if (!doneAlreadyCalled) {
+                    setTimeout(done, 500);
+                    doneAlreadyCalled = true;
+                }
             }).then(function(cons){
                 process1.start({
                     commandName: 'somecommand1'
                 });
                 process2.start({
-                    commandName: 'somecommand2'
+                    commandName: testCommand
                 });
             });
         });
