@@ -70,7 +70,17 @@ function ProcessClass(fsm, bus, fsmName) {
 var registeredFSMs = {};
 
 function fsmFactory(fsmName, bus) {
-    var fsm = require('./fsm/' + fsmName );
+    var fsm;
+    try {
+        fsm = require('./fsm/' + fsmName);
+    } catch (exception) {
+        if (global.__baseAppDir) {
+            fsm = require(global.__baseAppDir + 'fsm/' + fsmName);
+        } else {
+            throw exception;
+        }
+
+    }
     fsm.namespace = fsmName;
     return fsm;
 }

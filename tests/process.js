@@ -31,6 +31,13 @@ describe("process", function () {
                 bus.process(existedFSM);
             });
         });
+        it("should not throw exception if __baseAppDir is set global & fsm ist found under this dir", function(){
+            global.__baseAppDir = __dirname + '/fixture/';
+            assert.doesNotThrow(function() {
+                bus.process('dummyfsm');
+            });
+            delete global.__baseAppDir;
+        });
         it("process should return to different objects", function(){
             var process1 = bus.process(existedFSM);
             var process2 = bus.process(existedFSM);
