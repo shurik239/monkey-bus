@@ -80,37 +80,27 @@ function Bus (config, consumerId) {
     this.init = function() {
         var proms = {};
 
-        function cutExtension(fileName){
-            return fileName.slice(0, -3);
+        var mapping = {
+            command: 'receive',
+            request: 'handle',
+            event: 'subscribe'
+        };
+
+        for (var entity in mapping) {
+            proms[entity] = fs.readdirAsync(global.__baseAppDir + 'consume/' + entity + '/')
+                .map(function cutExtension(fileName){
+                    return fileName.slice(0, -3);
+                })
+                .each(function registerConsumer(ent, entityName){
+                    var consumer = require(global.__baseAppDir + 'consume/' + ent + '/' + entityName);
+                    return this[ent](entityName)[mapping[ent]](consumer);
+                }.bind(this, entity))
+                .catch(function(e){
+                    if (e.code !== "ENOENT") throw e;
+                });
         }
 
-        proms['commands'] =
-            fs.readdirAsync(global.__baseAppDir + 'consume/command/')
-                .each(cutExtension)
-                .each(function registerConsumer(entityName){
-                    var consumer = require(global.__baseAppDir + 'consume/command/' + entityName);
-                    return this.command(entityName).receive(consumer);
-                }.bind(this));
-
-        proms['request'] =
-            fs.readdirAsync(global.__baseAppDir + 'consume/request/')
-                .each(cutExtension)
-                .each(function registerConsumer(entityName){
-                    var consumer = require(global.__baseAppDir + 'consume/request/' + entityName);
-                    return this.request(entityName).handle(consumer);
-                }.bind(this));
-
-        proms['event'] =
-            fs.readdirAsync(global.__baseAppDir + 'consume/event/')
-                .each(cutExtension)
-                .each(function registerConsumer(entityName){
-                    var consumer = require(global.__baseAppDir + 'consume/event/' + entityName);
-                    return this.event(entityName).subscribe(consumer);
-                }.bind(this));
-
-        return Promise.props(proms).catch(function(e){
-            if (e.code !== "ENOENT") throw e;
-        });
+        return Promise.props(proms);
 
     };
 
