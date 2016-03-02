@@ -1,5 +1,7 @@
 "use strict";
 
+var Promise = require('bluebird');
+
 var logger = require("../logging")("bus-command");
 var util = require('util');
 var filter = require('../filter');
@@ -73,13 +75,15 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
     this.receive = function(callback) {
         return getConsumerPromise().then(function(consumer){
             consumer.receive(function(message, properties, actions, next){
-                actions.ack();
                 var commandResult = callback(message);
-                var props = {};
-                if (properties.correlationId) {
-                    props.correlationId = properties.correlationId;
-                }
-                bus.event([entityType, entityName, 'done'].join('.')).publish(commandResult, props);
+                Promise.resolve(commandResult).then(function(resp){
+                    actions.ack();
+                    var props = {};
+                    if (properties.correlationId) {
+                        props.correlationId = properties.correlationId;
+                    }
+                    bus.event([entityType, entityName, 'done'].join('.')).publish(resp, props);
+                });
             });
             return consumer;
         });

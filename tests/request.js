@@ -1,5 +1,7 @@
 "use strict";
 
+var Promise = require('bluebird');
+
 var chai = require("chai");
 var assert = chai.assert;
 
@@ -68,6 +70,36 @@ describe("request", function () {
             request.handle(function (consumedMessage) {
                 assert.deepEqual(consumedMessage, producedMessage);
                 return requestDoneMessage;
+            }).then(function(subscriber){
+                subscriber.on("ready", function(){
+                    request.request(producedMessage).then(function(message){
+                        assert.deepEqual(message, requestDoneMessage);
+                        setTimeout(done, 500);
+                    });
+                });
+            });
+        });
+    });
+    describe('receiver can response with promise', function() {
+
+        const requestName = 'test.request.name';
+
+        it("request should be able to call callback with response", function(done) {
+            var producedMessage = {
+                foo: 'bar'
+            };
+
+            var requestDoneMessage = {
+                bar: 'foo'
+            };
+
+            var request = bus.request(requestName);
+
+            request.handle(function (consumedMessage) {
+                assert.deepEqual(consumedMessage, producedMessage);
+                return Promise.delay(1000, function(){
+                    return requestDoneMessage;
+                });
             }).then(function(subscriber){
                 subscriber.on("ready", function(){
                     request.request(producedMessage).then(function(message){

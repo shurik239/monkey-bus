@@ -1,5 +1,7 @@
 "use strict";
 
+var Promise = require('bluebird');
+
 var chai = require("chai");
 var assert = chai.assert;
 
@@ -83,6 +85,41 @@ describe("command", function () {
         it("command has to handle empty arguments", function () {
             assert.doesNotThrow(function () {
                 bus.command('somecommand').send();
+            });
+        });
+
+    });
+
+    describe('command receiver can response with promise', function() {
+
+        const commandName = 'test.command.name2';
+
+        it("command should produce event done", function(done) {
+            var producedMessage = {
+                foo: 'bar'
+            };
+
+            var commandDoneMessage = {
+                bar: 'foo'
+            };
+
+            bus.event(['command', commandName, 'done'].join('.')).subscribe(function(message){
+                assert.deepEqual(message, commandDoneMessage);
+                setTimeout(done, 250);
+            }).then(function(){
+                var command = bus.command(commandName);
+
+                command.receive(function (consumedMessage) {
+                    assert.deepEqual(consumedMessage, producedMessage);
+                    return Promise.delay(1).then(function() {
+                        return commandDoneMessage;
+                    });
+                }).then(function(subscriber){
+                    subscriber.on("ready", function(){
+                        command.send(producedMessage);
+                    });
+                });
+
             });
         });
 
