@@ -3,6 +3,8 @@
 var chai = require("chai");
 var assert = chai.assert;
 
+var fs = require('fs');
+
 var config = require('./config.json');
 
 var Bus = require('../src/bus');
@@ -82,6 +84,20 @@ describe("bus", function () {
             assert.doesNotThrow(function() {
                 Bus(config).init().then(function(){
                     delete global.__baseAppDir;
+                    done();
+                });
+            });
+        });
+        it("throws no exceptions if global.__baseAppDir is empty directory", function (done) {
+            var tempFolder = __dirname + '/fixture2/';
+            global.__baseAppDir = tempFolder;
+            fs.mkdirSync(tempFolder);
+            fs.mkdirSync(tempFolder + 'consume/');
+            assert.doesNotThrow(function() {
+                Bus(config).init().then(function(){
+                    delete global.__baseAppDir;
+                    fs.rmdirSync(tempFolder + 'consume/');
+                    fs.rmdirSync(tempFolder);
                     done();
                 });
             });

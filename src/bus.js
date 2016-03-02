@@ -108,7 +108,9 @@ function Bus (config, consumerId) {
                     return this.event(entityName).subscribe(consumer);
                 }.bind(this));
 
-        return Promise.props(proms);
+        return Promise.props(proms).catch(function(e){
+            if (e.code !== "ENOENT") throw e;
+        });
 
     };
 
