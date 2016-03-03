@@ -63,6 +63,7 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
     };
 
     this.request = function(message) {
+        message = message || {};
         return getProducerPromise().then(function(producer){
             return new Promise(function(resolve){
                 producer.request(message, resolve);
