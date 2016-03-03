@@ -60,7 +60,7 @@ function EventClass(entityName, rabbitPromise, consumerId) {
 
     this.publish = function(message, properties) {
         properties = properties || {};
-
+        message = message || {};
         return getProducerPromise().then(function(producer){
             producer.publish(message, properties);
             return producer;
