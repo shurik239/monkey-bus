@@ -73,4 +73,33 @@ describe("event", function () {
             });
         });
     });
+
+    //describe('#unsibscribe', function(){
+    //    it('unsubscribed callback schould not be called again', function (done) {
+    //        const eventName = 'test.event.unsubscribe';
+    //        var producedMessage = {
+    //            foo: 'bar'
+    //        };
+    //        var event = eventSUT(eventName, pro, 'test');
+    //
+    //        var counter = 0;
+    //
+    //        var listenerFn = function (consumedMessage) {
+    //            counter += 1;
+    //            assert.deepEqual(consumedMessage, producedMessage);
+    //            event.unsubscribe(listenerFn);
+    //        };
+    //
+    //        event.subscribe(listenerFn).then(function(subscriber){
+    //            event.publish(producedMessage);
+    //            setTimeout(function () {
+    //                event.publish(producedMessage);
+    //            }, 250);
+    //        });
+    //        setTimeout(function(){
+    //            done(counter > 2 ? Error('listener called muliply times') : null);
+    //        }, 1000);
+    //
+    //    });
+    //});
 });

@@ -71,23 +71,31 @@ function EventClass(entityName, rabbitPromise, consumerId) {
         });
     };
 
+    var callback2 = function(cb, correlationId, message, properties, actions, next){
+        actions.ack();
+        if (correlationId && properties.correlationId !== correlationId) {
+            return;
+        }
+        cb(message);
+    };
+    //
+    //this.unsubscribe = function(callback){
+    //    getConsumerPromise().then(function(consumer){
+    //        consumer.subscribe(callback2.bind(null, callback, correlationId));
+    //        return consumer;
+    //    })
+    //};
+
     this.subscribe = function(callback, correlationId) {
         return new Promise(function (resolve, reject) {
             return getConsumerPromise().then(function(consumer){
-                consumer.subscribe(function(message, properties, actions, next){
-                    actions.ack();
-                    if (correlationId && properties.correlationId !== correlationId) {
-                        return;
-                    }
-                    callback(message);
-                });
+                consumer.subscribe(callback2.bind(null, callback, correlationId));
                 return consumer;
             }).then(function(consumer) {
                 consumer.on("ready", function(){
                     resolve(consumer);
                 })
             });
-
         });
     };
 

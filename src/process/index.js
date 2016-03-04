@@ -25,47 +25,43 @@ var snapshot = function(data) {
 var registeredProcesses = {};
 
 function ProcessClass(fsm, bus, fsmName) {
-
     this.id = uuid.v4();
     this.bus = bus;
     this.payload = null;
+    this.fsm = fsm;
+    this.fsmName = fsmName;
 
-    this.start = function(payload) {
-        this.payload = payload;
-        fsm.start(this);
-        //var client = snapshot( this );
-        //bus.event([processNS, fsmName, 'started'].join('.')).publish(client, {
-        //    correlationId: this.id
-        //});
-    };
-
-    this.on = function(eventName, callback, properties){
-        properties = properties || {};
-        return bus.event([processNS, fsmName, eventName].join('.')).subscribe(
-            function (eventPayload) {
-                var eventPayloadHasNeededProperties = true;
-                for (var prop in properties) {
-                    if (!eventPayload[prop] || eventPayload[prop] !== properties[prop]) {
-                        eventPayloadHasNeededProperties = false;
-                        break;
-                    }
-                }
-                if (eventPayloadHasNeededProperties) {
-                    callback(eventPayload.client);
-                }
-            },
-            this.id);
-    };
-
-    fsm.on("*", function (event, data){
+    this.fsm.on("*", function (event, data){
         if (data.client.id === this.id) {
             bus.event([processNS, fsmName, event].join('.')).publish(data, {
                 correlationId: this.id
             });
         }
     }.bind(this));
-
 }
+
+ProcessClass.prototype.start = function(payload) {
+    this.payload = payload;
+    this.fsm.start(this);
+};
+
+ProcessClass.prototype.on = function(eventName, callback, properties){
+    properties = properties || {};
+    return this.bus.event([processNS, this.fsmName, eventName].join('.')).subscribe(
+        function (eventPayload) {
+            var eventPayloadHasNeededProperties = true;
+            for (var prop in properties) {
+                if (!eventPayload[prop] || eventPayload[prop] !== properties[prop]) {
+                    eventPayloadHasNeededProperties = false;
+                    break;
+                }
+            }
+            if (eventPayloadHasNeededProperties) {
+                callback(eventPayload.client);
+            }
+        },
+        this.id);
+};
 
 var registeredFSMs = {};
 

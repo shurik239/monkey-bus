@@ -1,6 +1,9 @@
 var baseFSM = require('../fsm');
 
 var fsm = new baseFSM( {
+
+    finalState: 'doneEventConsumed',
+
     states: {
         uninitialized: {
             "start": function( process ) {
