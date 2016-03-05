@@ -4,6 +4,7 @@ var logger = require("../logging")("bus-request");
 var util = require('util');
 var filter = require('../filter');
 var createCustomerOrProducerPromise = require('../factory');
+var Promise = require('bluebird');
 
 const entityType = "request";
 const entityExchangeName = entityType + ".exchange";
@@ -76,7 +77,7 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
         return getConsumerPromise().then(function(consumer){
             consumer.handle(function(message, properties, actions, next){
                 var requestResponse = callback(message);
-                actions.reply(requestResponse);
+                Promise.resolve(requestResponse).then(actions.reply.bind(actions));
             });
             return consumer;
         });
