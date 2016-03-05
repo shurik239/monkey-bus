@@ -22,17 +22,16 @@ var snapshot = function(data) {
     return JSON.parse(str);
 };
 
-function ProcessClass(fsm, bus, fsmName) {
+function ProcessClass(bus, fsmName) {
     this.id = uuid.v4();
     this.bus = bus;
     this.payload = null;
-    this.fsm = fsm;
     this.fsmName = fsmName;
 }
 
 ProcessClass.prototype.start = function(payload) {
     this.payload = payload;
-    this.fsm.start(this);
+    registeredFSMs[this.fsmName].start(this);
 };
 
 var processListeners = {
@@ -113,7 +112,7 @@ function fsmFactory(fsmName, bus) {
     return fsm;
 }
 
-function getFsm(fsmName, bus) {
+function registerFsm(fsmName, bus) {
     if (!registeredFSMs[fsmName]) {
         registeredFSMs[fsmName] = fsmFactory(fsmName, bus);
         logger.debug('fsm "' + fsmName + '" created');
@@ -123,7 +122,6 @@ function getFsm(fsmName, bus) {
 
 module.exports = function(_fsmName, bus) {
     var fsmName = filter.string(_fsmName)
-    var fsm = getFsm(fsmName, bus);
-    var instance = new ProcessClass(fsm, bus, fsmName);
-    return instance;
+    registerFsm(fsmName, bus);
+    return new ProcessClass(bus, fsmName);
 };

@@ -71,28 +71,18 @@ function EventClass(entityName, rabbitPromise, consumerId) {
         });
     };
 
-    var callback2 = function(cb, correlationId, message, properties, actions, next){
+    var callback2 = function(cb, message, properties, actions, next){
         actions.ack();
-        if (correlationId && properties.correlationId !== correlationId) {
-            return;
-        }
-        cb(message);
+        cb(message, properties);
     };
-    //
-    //this.unsubscribe = function(callback){
-    //    getConsumerPromise().then(function(consumer){
-    //        consumer.subscribe(callback2.bind(null, callback, correlationId));
-    //        return consumer;
-    //    })
-    //};
 
-    this.subscribe = function(callback, correlationId) {
+    this.subscribe = function(callback) {
         return new Promise(function (resolve, reject) {
             return getConsumerPromise().then(function(consumer){
-                consumer.subscribe(callback2.bind(null, callback, correlationId));
+                consumer.subscribe(callback2.bind(null, callback));
                 return consumer;
             }).then(function(consumer) {
-                consumer.on("ready", function(){
+                consumer.once("ready", function(){
                     resolve(consumer);
                 })
             });

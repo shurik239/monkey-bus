@@ -4,16 +4,32 @@ var fsm = new baseFSM( {
 
     finalState: 'doneEventConsumed',
 
+    commandDoneSubscriberPromises: {},
+
+    processesWaitingForCommandDoneEvent: {},
+
+    commandEventListener: function(doneEventPayload, properties) {
+        if (properties.correlationId) {
+            var process = this.processesWaitingForCommandDoneEvent[properties.correlationId];
+
+            if (process) {
+                this.handle(process, 'doneEventComing', doneEventPayload);
+            }
+        }
+    },
+
     states: {
         uninitialized: {
             "start": function( process ) {
-                process.bus.event(['command', process.payload.commandName, 'done'].join('.'))
-                    .subscribe(
-                        this.handle.bind(this, process, 'doneEventComing'),
-                        process.id
-                    ).then(
-                        this.transition.bind(this, process, 'doneEventSubscribed')
-                    );
+                this.processesWaitingForCommandDoneEvent[process.id] = process;
+
+                if (!this.commandDoneSubscriberPromises[process.payload.commandName]) {
+                    this.commandDoneSubscriberPromises[process.payload.commandName] =
+                        process.bus.event(['command', process.payload.commandName, 'done'].join('.'))
+                        .subscribe(this.commandEventListener.bind(this));
+                }
+                this.commandDoneSubscriberPromises[process.payload.commandName].then(
+                    this.transition.bind(this, process, 'doneEventSubscribed').bind(this));
             }
         },
         doneEventSubscribed: {
@@ -28,6 +44,9 @@ var fsm = new baseFSM( {
             }
         },
         doneEventConsumed: {
+            _onEnter: function(process) {
+                delete this.processesWaitingForCommandDoneEvent[process.id];
+            }
         }
     }
 } );
