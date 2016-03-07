@@ -29,11 +29,6 @@ function ProcessClass(bus, fsmName) {
     this.fsmName = fsmName;
 }
 
-ProcessClass.prototype.start = function(payload) {
-    this.payload = payload;
-    registeredFSMs[this.fsmName].start(this);
-};
-
 var processListeners = {
 
 };
@@ -65,26 +60,44 @@ var mainListener = function (eventName, eventPayload) {
 
 var fsmListeners = {};
 
-ProcessClass.prototype.on = function(eventName, cb, properties){
-    properties = properties || {};
+ProcessClass.prototype = (function () {
 
-    if (!processListeners[this.id]) {
-        processListeners[this.id] = {};
-    }
+    var promiseResolve = null;
+    var promiseReject = null;
 
-    if (!processListeners[this.id][eventName]){
-        processListeners[this.id][eventName] = {
-            props: properties,
-            callback: cb
-        };
-    }
+    return {
+        start: function(payload) {
+            this.payload = payload;
+            registeredFSMs[this.fsmName].start(this);
+            return new Promise(function(resolve, reject){
+                promiseResolve = resolve;
+                promiseReject = reject;
+            }.bind(this));
+        },
+        on: function(eventName, cb, properties){
+            properties = properties || {};
 
-    if (!fsmListeners[this.fsmName][eventName]) {
-        fsmListeners[this.fsmName][eventName] =
-            this.bus.event([processNS, this.fsmName, eventName].join('.')).subscribe(mainListener.bind(null, eventName));
+            if (!processListeners[this.id]) {
+                processListeners[this.id] = {};
+            }
+
+            if (!processListeners[this.id][eventName]) {
+                processListeners[this.id][eventName] = {
+                    props: properties,
+                    callback: cb
+                };
+            }
+
+            if (!fsmListeners[this.fsmName][eventName]) {
+                fsmListeners[this.fsmName][eventName] =
+                    this.bus.event([processNS, this.fsmName, eventName].join('.'))
+                        .subscribe(mainListener.bind(null, eventName));
+            }
+
+            return fsmListeners[this.fsmName][eventName];
+        }
     }
-    return fsmListeners[this.fsmName][eventName];
-};
+}());
 
 var registeredFSMs = {};
 
