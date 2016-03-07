@@ -35,6 +35,10 @@ describe("bus", function () {
             assert.isFunction(busSUT.process);
         });
 
+        it("exception method", function () {
+            assert.isFunction(busSUT.exception);
+        });
+
     });
 
     describe("#constructor", function(){

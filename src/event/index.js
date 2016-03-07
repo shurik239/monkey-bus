@@ -4,13 +4,14 @@ var logger = require("../logging")("bus-event");
 var util = require('util');
 var filter = require('../filter');
 var createCustomerOrProducerPromise = require('../factory');
+var Promise = require('bluebird');
 
 const entityType = "event";
 
 var producerClass = 'Publisher';
 var consumerClass = 'Subscriber';
 
-function EventClass(entityName, rabbitPromise, consumerId) {
+function EventClass(entityName, rabbitPromise, consumerId, bus) {
 
     var producerPromise, consumerPromise;
 
@@ -71,15 +72,18 @@ function EventClass(entityName, rabbitPromise, consumerId) {
         });
     };
 
-    var callback2 = function(cb, message, properties, actions, next){
-        actions.ack();
-        cb(message, properties);
-    };
-
     this.subscribe = function(callback) {
         return new Promise(function (resolve, reject) {
             return getConsumerPromise().then(function(consumer){
-                consumer.subscribe(callback2.bind(null, callback));
+                consumer.subscribe(function(message, properties, actions, next){
+                    Promise
+                        .try(callback.bind(null, message, properties))
+                        .catch(function(error){
+                            bus.exception(error).throw();
+                        }).finally(function() {
+                            actions.ack();
+                        });
+                });
                 return consumer;
             }).then(function(consumer) {
                 consumer.once("ready", function(){
@@ -92,6 +96,6 @@ function EventClass(entityName, rabbitPromise, consumerId) {
     logger.debug(entityType+ ' ' + entityName + ' created');
 }
 
-module.exports = function(eventName, rabbitPromis, consumerId) {
-    return new EventClass(filter.string(eventName), rabbitPromis, consumerId);
+module.exports = function(eventName, rabbitPromis, consumerId, bus) {
+    return new EventClass(filter.string(eventName), rabbitPromis, consumerId, bus);
 };

@@ -7,6 +7,7 @@ var Event = require('./event');
 var Command = require('./command');
 var Request = require('./request');
 var Process = require('./process');
+var Exception = require('./exception');
 const util = require('util');
 const filter = require('./filter');
 
@@ -59,7 +60,7 @@ function Bus (config, consumerId) {
         var eventNameFiltered = filter.string(eventName);
 
         if (!registered.events[eventNameFiltered]) {
-            registered.events[eventNameFiltered] = Event(eventNameFiltered, rabbitPromise, consumerId);
+            registered.events[eventNameFiltered] = Event(eventNameFiltered, rabbitPromise, consumerId, this);
         }
 
         return registered.events[eventNameFiltered];
@@ -75,6 +76,10 @@ function Bus (config, consumerId) {
 
     this.process = function(fsmName) {
         return Process(fsmName, this);
+    };
+
+    this.exception = function(exceptionName) {
+        return Exception(exceptionName, rabbitPromise, consumerId, this);
     };
 
     this.init = function() {

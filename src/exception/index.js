@@ -1,18 +1,19 @@
 "use strict";
 
-var logger = require("../logging")("bus-request");
+var Promise = require('bluebird');
+
+var logger = require("../logging")("bus-exception");
 var util = require('util');
 var filter = require('../filter');
 var createCustomerOrProducerPromise = require('../factory');
-var Promise = require('bluebird');
 
-const entityType = "request";
+const entityType = "exception";
 const entityExchangeName = entityType + ".exchange";
 
-var producerClass = 'Requester';
-var consumerClass = 'Responder';
+var producerClass = 'Publisher';
+var consumerClass = 'Subscriber';
 
-function RequestClass(entityName, rabbitPromise, consumerId, bus) {
+function ExceptionClass(entityName, rabbitPromise, consumerId, bus, exception) {
 
     var producerPromise, consumerPromise;
 
@@ -44,8 +45,7 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
                 exchange: entityExchangeName,
                 queue: {
                     name: [fullPath, consumerId].join('.'),
-                    limit: 1,
-                    autoDelete: true
+                    autoDelete: false
                 },
                 routingKey: fullPath,
                 messageType: fullPath
@@ -63,35 +63,47 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
         return consumerPromise;
     };
 
-    this.request = function(message) {
-        message = message || {};
+    this.throw = function(properties) {
+        properties = properties || {};
         return getProducerPromise().then(function(producer){
-            return new Promise(function(resolve){
-                producer.request(message, resolve);
-                return producer;
-            });
+            producer.publish({
+                message: exception.message
+            }, properties);
+            return producer;
         });
     };
 
-    this.handle = function(callback) {
-        return getConsumerPromise().then(function(consumer){
-            consumer.handle(function(message, properties, actions, next){
-                Promise.try(callback.bind(null, message))
-                    .then(actions.reply.bind(actions))
-                    .catch(function(error){
-                        bus.exception(error).throw();
-                    }).finally(function() {
-                        actions.ack();
-                    });
+    this.catch = function(callback) {
+        return new Promise(function (resolve, reject) {
+            return getConsumerPromise().then(function(consumer){
+                consumer.subscribe(function(message, properties, actions, next){
+                    Promise
+                        .try(callback.bind(null, message, properties))
+                        .catch(function(error){
+                            logger.error(error);
+                        });
+                    actions.ack();
+                });
+                return consumer;
+            }).then(function(consumer) {
+                consumer.once("ready", function(){
+                    resolve(consumer);
+                })
             });
-            return consumer;
         });
     };
 
     logger.debug(entityType + ' ' + entityName + ' created');
 }
 
-module.exports = function(requestName, rabbitPromis, consumerId, bus) {
-    return new RequestClass(filter.string(requestName), rabbitPromis, consumerId, bus);
-};
+module.exports = function(exception, rabbitPromise, consumerId, bus) {
+    var exceptionName = (exception instanceof Error) ? exception.message : exception;
 
+    return new ExceptionClass(
+        filter.string(exceptionName).replace(/[^a-z0-9_]/ig, '_'),
+        rabbitPromise,
+        consumerId,
+        bus,
+        exception
+    );
+};
