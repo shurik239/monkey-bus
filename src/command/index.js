@@ -64,8 +64,8 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
     };
 
     this.send = function(message, properties) {
-        var properties = properties || {};
-        var message = message || {};
+        properties = properties || {};
+        message = message || {};
         return getProducerPromise().then(function(producer){
             producer.send(message, properties);
             return producer;
@@ -75,14 +75,16 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
     this.receive = function(callback) {
         return getConsumerPromise().then(function(consumer){
             consumer.receive(function(message, properties, actions, next){
-                var commandResult = callback(message);
-                Promise.resolve(commandResult).then(function(resp){
-                    actions.ack();
+                Promise.try(callback.bind(null, message)).then(function(resp){
                     var props = {};
                     if (properties.correlationId) {
                         props.correlationId = properties.correlationId;
                     }
                     bus.event([entityType, entityName, 'done'].join('.')).publish(resp, props);
+                }).catch(function(error){
+                    bus.exception(error).throw();
+                }).finally(function(){
+                    actions.ack();
                 });
             });
             return consumer;
