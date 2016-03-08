@@ -44,26 +44,6 @@ describe("process", function () {
 
             assert.notStrictEqual(process1, process2);
         });
-        //it("process start should publish event created", function(done){
-        //    var consumer;
-        //
-        //    var doneAllreadySent = false;
-        //
-        //    bus.event('process.' + existedFSM + '.started').subscribe(function(message){
-        //        if (doneAllreadySent) return;
-        //        setTimeout(done, 250);
-        //        doneAllreadySent = true;
-        //    })
-        //    .then(function(cons){
-        //        consumer = cons;
-        //        setTimeout(function(){
-        //            bus.process(existedFSM).start({
-        //                commandName: 'someCommand'
-        //            }),
-        //            250
-        //        })
-        //    });
-        //});
         it("client can subscribe only on events of this process", function(done){
             var process1 = bus.process(existedFSM);
             var process2 = bus.process(existedFSM);

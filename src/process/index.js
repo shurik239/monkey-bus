@@ -68,11 +68,21 @@ ProcessClass.prototype = (function () {
     return {
         start: function(payload) {
             this.payload = payload;
-            registeredFSMs[this.fsmName].start(this);
-            return new Promise(function(resolve, reject){
+            return new Promise((resolve, reject) => {
                 promiseResolve = resolve;
                 promiseReject = reject;
-            }.bind(this));
+                this.on(
+                    'transition',
+                    function(data) {
+                        promiseResolve(data);
+                    },
+                    {
+                        toState: registeredFSMs[this.fsmName].finalState
+                    }
+                ).then(() => {
+                    registeredFSMs[this.fsmName].start(this);
+                });
+            });
         },
         on: function(eventName, cb, properties){
             properties = properties || {};
