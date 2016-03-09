@@ -76,10 +76,14 @@ function RequestClass(entityName, rabbitPromise, consumerId, bus) {
     this.handle = function(callback) {
         return getConsumerPromise().then(function(consumer){
             consumer.handle(function(message, properties, actions, next){
+                var props = {};
+                if (properties.correlationId) {
+                    props.correlationId = properties.correlationId;
+                }
                 Promise.try(callback.bind(null, message))
                     .then(actions.reply.bind(actions))
                     .catch(function(error){
-                        bus.exception(error).throw();
+                        bus.exception(error).throw(props);
                     }).finally(function() {
                         actions.ack();
                     });

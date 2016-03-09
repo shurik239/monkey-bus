@@ -76,11 +76,15 @@ function EventClass(entityName, rabbitPromise, consumerId, bus) {
         return new Promise(function (resolve, reject) {
             return getConsumerPromise().then(function(consumer){
                 consumer.subscribe(function(message, properties, actions, next){
+                    var props = {};
+                    if (properties.correlationId) {
+                        props.correlationId = properties.correlationId;
+                    }
                     Promise
                         .try(callback.bind(null, message, properties))
                         .catch(function(error){
-                            bus.exception(error).throw();
-                        }).finally(function() {
+                            bus.exception(error).throw(props);
+                        }).finally(function(){
                             actions.ack();
                         });
                 });

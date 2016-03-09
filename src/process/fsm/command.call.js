@@ -8,7 +8,7 @@ var fsm = new baseFSM( {
 
     processesWaitingForCommandDoneEvent: {},
 
-    commandEventListener: function(doneEventPayload, properties) {
+    commandDoneEventListener: function(doneEventPayload, properties) {
         if (properties.correlationId) {
             var process = this.processesWaitingForCommandDoneEvent[properties.correlationId];
 
@@ -16,8 +16,8 @@ var fsm = new baseFSM( {
                 this.handle(process, 'doneEventComing', doneEventPayload);
             }
         }
-    },
 
+    },
     states: {
         uninitialized: {
             "start": function( process ) {
@@ -26,7 +26,7 @@ var fsm = new baseFSM( {
                 if (!this.commandDoneSubscriberPromises[process.payload.commandName]) {
                     this.commandDoneSubscriberPromises[process.payload.commandName] =
                         process.bus.event(['command', process.payload.commandName, 'done'].join('.'))
-                        .subscribe(this.commandEventListener.bind(this));
+                        .subscribe(this.commandDoneEventListener.bind(this));
                 }
                 this.commandDoneSubscriberPromises[process.payload.commandName].then(
                     this.transition.bind(this, process, 'doneEventSubscribed').bind(this));

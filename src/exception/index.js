@@ -22,9 +22,13 @@ function ExceptionClass(entityName, rabbitPromise, consumerId, bus, exception) {
     var getProducerPromise = function(){
         if (!producerPromise) {
             var options = {
-                exchange: entityExchangeName,
-                routingKey: fullPath,
-                messageType: fullPath
+                exchange: {
+                    name: entityExchangeName,
+                    type: 'topic'
+                },
+                routingKey: fullPath
+//                ,
+//                messageType: fullPath
             };
 
             producerPromise = createCustomerOrProducerPromise(
@@ -42,13 +46,16 @@ function ExceptionClass(entityName, rabbitPromise, consumerId, bus, exception) {
     var getConsumerPromise = function(){
         if (!consumerPromise) {
             var options = {
-                exchange: entityExchangeName,
+                exchange: {
+                    name: entityExchangeName,
+                    type: 'topic'
+                },
                 queue: {
                     name: [fullPath, consumerId].join('.'),
                     autoDelete: false
                 },
                 routingKey: fullPath,
-                messageType: fullPath
+//                messageType: fullPath
             };
 
             consumerPromise = createCustomerOrProducerPromise(
@@ -77,12 +84,14 @@ function ExceptionClass(entityName, rabbitPromise, consumerId, bus, exception) {
         return new Promise(function (resolve, reject) {
             return getConsumerPromise().then(function(consumer){
                 consumer.subscribe(function(message, properties, actions, next){
+                    console.log('in catch subscribe', entityName);
                     Promise
                         .try(callback.bind(null, message, properties))
                         .catch(function(error){
                             logger.error(error);
+                        }).finally(function(){
+                            actions.ack();
                         });
-                    actions.ack();
                 });
                 return consumer;
             }).then(function(consumer) {
@@ -100,7 +109,7 @@ module.exports = function(exception, rabbitPromise, consumerId, bus) {
     var exceptionName = (exception instanceof Error) ? exception.message : exception;
 
     return new ExceptionClass(
-        filter.string(exceptionName).replace(/[^a-z0-9_]/ig, '_'),
+        filter.string(exceptionName).replace(/[^a-z0-9_*#]/ig, '_'),
         rabbitPromise,
         consumerId,
         bus,

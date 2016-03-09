@@ -75,14 +75,14 @@ function CommandClass(entityName, rabbitPromise, consumerId, bus) {
     this.receive = function(callback) {
         return getConsumerPromise().then(function(consumer){
             consumer.receive(function(message, properties, actions, next){
+                var props = {};
+                if (properties.correlationId) {
+                    props.correlationId = properties.correlationId;
+                }
                 Promise.try(callback.bind(null, message)).then(function(resp){
-                    var props = {};
-                    if (properties.correlationId) {
-                        props.correlationId = properties.correlationId;
-                    }
                     bus.event([entityType, entityName, 'done'].join('.')).publish(resp, props);
                 }).catch(function(error){
-                    bus.exception(error).throw();
+                    bus.exception(error).throw(props);
                 }).finally(function(){
                     actions.ack();
                 });
