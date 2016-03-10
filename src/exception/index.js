@@ -84,7 +84,6 @@ function ExceptionClass(entityName, rabbitPromise, consumerId, bus, exception) {
         return new Promise(function (resolve, reject) {
             return getConsumerPromise().then(function(consumer){
                 consumer.subscribe(function(message, properties, actions, next){
-                    console.log('in catch subscribe', entityName);
                     Promise
                         .try(callback.bind(null, message, properties))
                         .catch(function(error){

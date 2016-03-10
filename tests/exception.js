@@ -25,7 +25,6 @@ describe('exception', function () {
             var doneCalled = false;
 
             bus.exception('#').catch(function(exp){
-                console.log('hier1', exp);
                 if (!doneCalled) {
                     setTimeout(done, 250);
                     doneCalled = true;
@@ -44,10 +43,14 @@ describe('exception', function () {
 
             var event = bus.event('throwing-exception-asynchron');
 
+            var doneCalled = false;
+
             bus.exception(exceptionMessage).catch(function(exception){
-                console.log('hier2', exception);
                 assert.equal(exception.message, exceptionMessage);
-                setTimeout(done, 500);
+                if (!doneCalled) {
+                    setTimeout(done, 500);
+                    doneCalled = true;
+                }
             }).then(function() {
                 return event.subscribe(function () {
                     return Promise.delay(10).then(function () {
