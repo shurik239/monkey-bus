@@ -37,7 +37,7 @@ describe('command.call fsm', function () {
                 setTimeout(done, 500);
             },
             {
-                toState: "doneEventConsumed"
+                toState: "done"
             }
         ).then(function () {
             process.start({

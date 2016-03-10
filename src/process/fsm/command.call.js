@@ -3,8 +3,6 @@ var Promise = require('bluebird');
 
 var fsm = new baseFSM( {
 
-    finalState: 'doneEventConsumed',
-
     commandDoneSubscriberPromises: {},
 
     processesWaitingForCommandDoneEvent: {},
@@ -15,17 +13,6 @@ var fsm = new baseFSM( {
 
             if (process) {
                 this.handle(process, 'doneEventComing', doneEventPayload);
-            }
-        }
-
-    },
-
-    commandExceptionListener: function(exception, properties) {
-        if (properties.correlationId) {
-            var process = this.processesWaitingForCommandDoneEvent[properties.correlationId];
-
-            if (process) {
-                this.handle(process, 'exceptionComing', exception);
             }
         }
 
@@ -62,21 +49,6 @@ var fsm = new baseFSM( {
             exceptionComing: function(process, exception) {
                 process.payload.exception = exception;
                 this.transition(process, 'exception');
-            }
-        },
-        success: {
-            _onEnter: function(process) {
-                this.transition(process, 'doneEventConsumed');
-            }
-        },
-        exception: {
-            _onEnter: function(process) {
-                this.transition(process, 'doneEventConsumed');
-            }
-        },
-        doneEventConsumed: {
-            _onEnter: function(process) {
-                delete this.processesWaitingForCommandDoneEvent[process.id];
             }
         }
     }
