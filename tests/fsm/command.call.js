@@ -69,24 +69,25 @@ describe('command.call fsm', function () {
             setTimeout(done, 500);
         });
     });
-    //it('exception in command should be propagate to process start promise', function (done) {
-    //    var commandArguments = {
-    //        foo: "bar"
-    //    };
-    //
-    //    var testCommand = 'test.command.promise.catch';
-    //    var exceptionMessage = 'exception message trace';
-    //
-    //    bus.command(testCommand).receive(function(data){
-    //        throw new Error(exceptionMessage);
-    //    });
-    //
-    //    var process = bus.process('command.call');
-    //    process.start({
-    //        commandName: testCommand,
-    //        commandArgs: commandArguments
-    //    }).catch(function(data) {
-    //        setTimeout(done, 500);
-    //    });
-    //});
+    it('exception in command should be propagate to process start promise', function (done) {
+        var commandArguments = {
+            foo: "bar"
+        };
+
+        var testCommand = 'test.command.promise.catch';
+        var exceptionMessage = 'exception message trace';
+
+        bus.command(testCommand).receive(function(data){
+            throw new Error(exceptionMessage);
+        });
+
+        var process = bus.process('command.call');
+        process.start({
+            commandName: testCommand,
+            commandArgs: commandArguments
+        }).catch(function(data) {
+            assert.equal(data.payload.exception.message, exceptionMessage);
+            setTimeout(done, 500);
+        });
+    });
 });

@@ -1,3 +1,5 @@
+"use strict";
+
 var filter = require('../filter');
 var logger = require("../logging")("bus-process");
 var uuid = require("node-uuid");
@@ -34,20 +36,27 @@ var processListeners = {
 };
 
 var mainListener = function (eventName, eventPayload) {
+
     if (
         processListeners[eventPayload.client.id] &&
         processListeners[eventPayload.client.id][eventName]
     ) {
-        var properties = processListeners[eventPayload.client.id][eventName].props;
-        var eventPayloadHasNeededProperties = true;
-        for (var prop in properties) {
-            if (!eventPayload[prop] || eventPayload[prop] !== properties[prop]) {
-                eventPayloadHasNeededProperties = false;
-                break;
+        var eventListeners = processListeners[eventPayload.client.id][eventName];
+        var size = processListeners[eventPayload.client.id][eventName].length;
+        var i = 0;
+
+        for (; i < size; i += 1) {
+            var properties = eventListeners[i].props;
+            var eventPayloadHasNeededProperties = true;
+            for (var prop in properties) {
+                if (!eventPayload[prop] || eventPayload[prop] !== properties[prop]) {
+                    eventPayloadHasNeededProperties = false;
+                    break;
+                }
             }
-        }
-        if (eventPayloadHasNeededProperties) {
-            processListeners[eventPayload.client.id][eventName].callback(eventPayload.client);
+            if (eventPayloadHasNeededProperties) {
+                eventListeners[i].callback(eventPayload.client);
+            }
         }
     }
     if (eventName === 'transition') {
@@ -56,6 +65,11 @@ var mainListener = function (eventName, eventPayload) {
             delete processListeners[eventPayload.client.id];
         }
     }
+
+    if (eventName === 'exception') {
+        delete processListeners[eventPayload.client.id];
+    }
+
 };
 
 var fsmListeners = {};
@@ -71,15 +85,26 @@ ProcessClass.prototype = (function () {
             return new Promise((resolve, reject) => {
                 promiseResolve = resolve;
                 promiseReject = reject;
-                this.on(
-                    'transition',
-                    function(data) {
-                        promiseResolve(data);
-                    },
-                    {
-                        toState: registeredFSMs[this.fsmName].finalState
-                    }
-                ).then(() => {
+                Promise.all([
+                    this.on(
+                        'transition',
+                        function(data) {
+                            promiseResolve(data);
+                        },
+                        {
+                            toState: 'success'
+                        }
+                    ),
+                    this.on(
+                        'transition',
+                        function(data) {
+                            promiseReject(data);
+                        },
+                        {
+                            toState: 'exception'
+                        }
+                    )
+                ]).then(() => {
                     registeredFSMs[this.fsmName].start(this);
                 });
             });
@@ -92,11 +117,13 @@ ProcessClass.prototype = (function () {
             }
 
             if (!processListeners[this.id][eventName]) {
-                processListeners[this.id][eventName] = {
-                    props: properties,
-                    callback: cb
-                };
+                processListeners[this.id][eventName] = [];
             }
+
+            processListeners[this.id][eventName].push({
+                props: properties,
+                callback: cb
+            });
 
             if (!fsmListeners[this.fsmName][eventName]) {
                 fsmListeners[this.fsmName][eventName] =

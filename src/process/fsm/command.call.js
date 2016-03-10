@@ -1,4 +1,5 @@
 var baseFSM = require('../fsm');
+var Promise = require('bluebird');
 
 var fsm = new baseFSM( {
 
@@ -18,18 +19,34 @@ var fsm = new baseFSM( {
         }
 
     },
+
+    commandExceptionListener: function(exception, properties) {
+        if (properties.correlationId) {
+            var process = this.processesWaitingForCommandDoneEvent[properties.correlationId];
+
+            if (process) {
+                this.handle(process, 'exceptionComing', exception);
+            }
+        }
+
+    },
+
     states: {
         uninitialized: {
             "start": function( process ) {
                 this.processesWaitingForCommandDoneEvent[process.id] = process;
 
                 if (!this.commandDoneSubscriberPromises[process.payload.commandName]) {
-                    this.commandDoneSubscriberPromises[process.payload.commandName] =
-                        process.bus.event(['command', process.payload.commandName, 'done'].join('.'))
-                        .subscribe(this.commandDoneEventListener.bind(this));
+                    this.commandDoneSubscriberPromises[process.payload.commandName] = [
+                            process.bus.event(['command', process.payload.commandName, 'done'].join('.'))
+                                .subscribe(this.commandDoneEventListener.bind(this)),
+                            process.bus.exception('#')
+                                .catch(this.commandExceptionListener.bind(this))
+                        ];
+
                 }
-                this.commandDoneSubscriberPromises[process.payload.commandName].then(
-                    this.transition.bind(this, process, 'doneEventSubscribed').bind(this));
+                Promise.all(this.commandDoneSubscriberPromises[process.payload.commandName])
+                    .then(this.transition.bind(this, process, 'doneEventSubscribed').bind(this));
             }
         },
         doneEventSubscribed: {
@@ -40,6 +57,20 @@ var fsm = new baseFSM( {
             },
             doneEventComing: function(process, doneData) {
                 process.payload.commandDone = doneData;
+                this.transition(process, 'success');
+            },
+            exceptionComing: function(process, exception) {
+                process.payload.exception = exception;
+                this.transition(process, 'exception');
+            }
+        },
+        success: {
+            _onEnter: function(process) {
+                this.transition(process, 'doneEventConsumed');
+            }
+        },
+        exception: {
+            _onEnter: function(process) {
                 this.transition(process, 'doneEventConsumed');
             }
         },
@@ -49,6 +80,6 @@ var fsm = new baseFSM( {
             }
         }
     }
-} );
+});
 
 module.exports = fsm;
