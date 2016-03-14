@@ -29,6 +29,9 @@ function ProcessClass(bus, fsmName) {
     this.bus = bus;
     this.payload = null;
     this.fsmName = fsmName;
+
+    this.promiseResolve = null;
+    this.promiseReject = null;
 }
 
 var processListeners = {
@@ -76,20 +79,17 @@ var fsmListeners = {};
 
 ProcessClass.prototype = (function () {
 
-    var promiseResolve = null;
-    var promiseReject = null;
-
     return {
         start: function(payload) {
             this.payload = payload;
             return new Promise((resolve, reject) => {
-                promiseResolve = resolve;
-                promiseReject = reject;
+                this.promiseResolve = resolve;
+                this.promiseReject = reject;
                 Promise.all([
                     this.on(
                         'transition',
-                        function(data) {
-                            promiseResolve(data);
+                        (data) => {
+                            this.promiseResolve(data);
                         },
                         {
                             toState: 'success'
@@ -97,8 +97,8 @@ ProcessClass.prototype = (function () {
                     ),
                     this.on(
                         'transition',
-                        function(data) {
-                            promiseReject(data);
+                        (data) => {
+                            this.promiseReject(data);
                         },
                         {
                             toState: 'exception'

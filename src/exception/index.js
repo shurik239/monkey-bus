@@ -73,6 +73,7 @@ function ExceptionClass(entityName, rabbitPromise, consumerId, bus, exception) {
     this.throw = function(properties) {
         properties = properties || {};
         return getProducerPromise().then(function(producer){
+            logger.error(exception);
             producer.publish({
                 message: exception.message
             }, properties);
