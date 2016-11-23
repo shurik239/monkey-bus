@@ -2,7 +2,7 @@
 
 var filter = require('../filter');
 var logger = require("../logging")("bus-process");
-var uuid = require("node-uuid");
+var uuid = require("uuid");
 
 const processNS = "process";
 

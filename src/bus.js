@@ -13,7 +13,7 @@ const filter = require('./filter');
 
 var fs = Promise.promisifyAll(require("fs"));
 
-var uuid = require("node-uuid");
+var uuid = require("uuid");
 
 function exit(){
     logger.warn("");
